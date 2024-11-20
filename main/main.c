@@ -23,9 +23,10 @@ typedef struct NodoArvore {
 
 void cadastrarPalavra(Nodo **raiz, NodoArvore **arvore);
 void listarPalavras(Nodo *raiz);
-void excluirPalavra(Nodo **raiz, char *palavra);
+void excluirPalavra(Nodo **raiz, char *palavra, NodoArvore **arvore);
 
-
+NodoArvore* encontrarMinimo(NodoArvore* raiz);
+NodoArvore* removerArvore(NodoArvore* raiz, const char* palavra);
 NodoArvore* buscarPalavra(NodoArvore *raiz, char *palavra);
 
 void alterarPalavra(NodoArvore *arvore, Nodo *lista, char *palavra);
@@ -48,9 +49,9 @@ void limparTela() {
 int lerOpcao() {
     int opcao;
     while (1) {
-        printf("Escolha uma opcao: ");
+        printf("\033[1;32mEscolha uma opcao: \033[0m");
         if (scanf("%d", &opcao) != 1) {
-            printf("Entrada invalida! Por favor, insira um numero.\n");
+            printf("\033[1;31mEntrada invalida! Por favor, insira um numero.\033[0m\n");
             while (getchar() != '\n'); 
         } else {
             break;
@@ -78,16 +79,16 @@ void menu(Nodo **lista, NodoArvore **arvore) {
     do {
         limparTela(); 
         printf("\n");
+        printf("\033[1;34m*******************************************************\n");
+        printf("* \033[1;32m                 MENU DICIONARIO\033[1;34m               *\n");
         printf("*******************************************************\n");
-        printf("*                    MENU DICIONARIO                  *\n");
-        printf("*******************************************************\n");
-        printf("* 1. Cadastrar Palavra                                *\n");
-        printf("* 2. Listar Palavras                                  *\n");
-        printf("* 3. Buscar Palavra                                   *\n");
-        printf("* 4. Alterar Palavra                                  *\n");
-        printf("* 5. Excluir Palavra                                  *\n");
-        printf("* 0. Sair                                             *\n");
-        printf("*******************************************************\n");
+        printf("* \033[1;33m1. Cadastrar Palavra\033[0m                                *\n");
+        printf("* \033[1;33m2. Listar Palavras\033[0m                                  *\n");
+        printf("* \033[1;33m3. Buscar Palavra\033[0m                                   *\n");
+        printf("* \033[1;33m4. Alterar Palavra\033[0m                                  *\n");
+        printf("* \033[1;33m5. Excluir Palavra\033[0m                                  *\n");
+        printf("* \033[1;31m0. Sair\033[0m                                             *\n");
+        printf("\033[1;34m*******************************************************\033[0m\n");
         
         opcao = lerOpcao();
         
@@ -134,7 +135,7 @@ void menu(Nodo **lista, NodoArvore **arvore) {
                 printf("Digite a palavra a ser excluida: ");
                 getchar();  
                 lerString(palavra, 50);
-                excluirPalavra(lista, palavra);
+                excluirPalavra(lista, palavra, arvore);
                 printf("\nPressione Enter para voltar ao menu...");
                 getchar();
                 limparTela(); 
@@ -159,13 +160,13 @@ void cadastrarPalavra(Nodo **lista, NodoArvore **arvore) {
 
     getchar();
 
-    printf("Digite a palavra: ");
+    printf("\033[1;36mDigite a palavra: \033[0m");
     lerString(nova->palavra, 50);
-    printf("Digite a traducao em ingles: ");
+    printf("\033[1;36mDigite a traducao em ingles: \033[0m");
     lerString(nova->traducao, 50);
-    printf("Digite o tipo gramatical (ex: substantivo, adjetivo): ");
+    printf("\033[1;36mDigite o tipo gramatical (ex: substantivo, adjetivo): \033[0m");
     lerString(nova->tipo, 30);
-    printf("Digite uma frase de exemplo: ");
+    printf("\033[1;36mDigite uma frase de exemplo: \033[0m");
     lerString(nova->fraseExemplo, 100);
     
     nova->proximo = *lista;
@@ -185,11 +186,11 @@ void listarPalavras(Nodo *raiz) {
     }
     
     while (atual != NULL) {
-        printf("\nPalavra: %s\n", atual->palavra);
+        printf("\033[0;32m\nPalavra: %s\n", atual->palavra);
         printf("Traducao: %s\n", atual->traducao);
         printf("Tipo gramatical: %s\n", atual->tipo);
         printf("Frase de exemplo: %s\n", atual->fraseExemplo);
-        printf("------------------------\n");
+        printf("------------------------\033[0m\n");
         atual = atual->proximo;
     }
 }
@@ -217,6 +218,7 @@ void alterarPalavra(NodoArvore *arvore, Nodo *lista, char *palavra) {
         int opcao;
         
         do {
+            limparTela();
             printf("\nO que voce deseja alterar?\n");
             printf("1. Alterar palavra\n");
             printf("2. Alterar traducao\n");
@@ -287,7 +289,7 @@ void alterarNaLista(Nodo *lista, char *palavra, char *novoValor, const char *cam
 }
 
 
-void excluirPalavra(Nodo **raiz, char *palavra) {
+void excluirPalavra(Nodo **raiz, char *palavra, NodoArvore **arvore) {
     Nodo *atual = *raiz;
     Nodo *anterior = NULL;
     
@@ -307,10 +309,56 @@ void excluirPalavra(Nodo **raiz, char *palavra) {
         anterior->proximo = atual->proximo;
     }
     free(atual);  
+    *arvore = removerArvore(*arvore, palavra);
+
     printf("Palavra excluida com sucesso.\n");
 }
 
+NodoArvore* removerArvore(NodoArvore* raiz, const char* palavra) {
+    if(raiz ==NULL){
+        return NULL;
+    }
 
+    if(comparaStrings(palavra, raiz->palavra) == 0){
+        //Nó Folha
+        if(raiz->esquerda == NULL && raiz->direita == NULL){
+            free(raiz);
+            return NULL;
+        }
+        //Nó com 1 filho
+        if(raiz->esquerda == NULL){
+            NodoArvore* temp = raiz->direita;
+            free(raiz);
+            return temp;            
+        }else if (raiz->direita == NULL){
+            NodoArvore* temp = raiz->esquerda;
+            free(raiz);
+            return temp;
+        }
+
+        //No com 2 Filhos
+        NodoArvore* temp = encontrarMinimo(raiz->direita);
+        strcpy(raiz->palavra, temp->palavra);
+        strcpy(raiz->traducao, temp->traducao);
+        strcpy(raiz->tipo, temp->tipo);
+        strcpy(raiz->fraseExemplo, temp->fraseExemplo);
+
+        //Remove o nó copiado
+        raiz->direita = removerArvore(raiz->direita, temp->palavra);
+    }else if(comparaStrings(palavra, raiz->palavra) < 0){
+        raiz->esquerda = removerArvore(raiz->esquerda, palavra);
+    }else{
+        raiz->direita = removerArvore(raiz->direita, palavra);
+    }
+    return raiz;
+}
+
+NodoArvore* encontrarMinimo(NodoArvore* raiz){
+    while(raiz && raiz->esquerda != NULL){
+        raiz = raiz->esquerda;
+    }
+    return raiz;
+}
 NodoArvore* inserirArvore(NodoArvore *raiz, Nodo *nova) {
     if (raiz == NULL) {
         NodoArvore *novoNodo = (NodoArvore*)malloc(sizeof(NodoArvore));
